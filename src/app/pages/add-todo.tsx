@@ -1,16 +1,36 @@
 "use client";
 
+import { useBoundStore } from "@/hooks/boundStore";
 import styled from "@emotion/styled";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function AddTodo({chooseDate}: {chooseDate: string}) {
-  console.log(chooseDate);
+  const [value, setValue] = useState('');
+  const {todo, setTodo} = useBoundStore();
+  const router = useRouter();
 
   const date = new Date(
     Number(chooseDate.slice(0,4)),
     Number(chooseDate.slice(4,6)),
     Number(chooseDate.slice(6,8))
   );
+
+  const addData = () => {
+    const dateTodo = todo.get(chooseDate);
+
+    if(dateTodo){
+      todo.set(chooseDate, dateTodo.concat(value));
+    }
+    else {
+      todo.set(chooseDate, [value]);
+    }
+
+    setTodo(todo);
+
+    router.push('/');
+  }
 
   return (
     <styles.displayWrapper>
@@ -22,11 +42,11 @@ export default function AddTodo({chooseDate}: {chooseDate: string}) {
             </styles.exitButton>
           </styles.exitButtonWrapper>
         </Link>
-        <styles.titleInput type="text" placeholder="제목 추가"/>
-        <styles.saveButton>저장</styles.saveButton>
+        <styles.titleInput type="text"  onChange={e => setValue(e.currentTarget.value)} placeholder="제목 추가"/>
+        <styles.saveButton onClick={() => addData()}>저장</styles.saveButton>
       </styles.headerWrapper>
       <styles.dateWrapper>
-        <styles.dateInput type="text" value={date.getFullYear()+"년 "+date.getMonth()+"월 "+date.getDate()+"일"}></styles.dateInput>
+        <styles.dateInput readOnly type="text" value={date.getFullYear()+"년 "+date.getMonth()+"월 "+date.getDate()+"일"}></styles.dateInput>
       </styles.dateWrapper>
     </styles.displayWrapper>
   );

@@ -1,13 +1,14 @@
 'use client';
 
 import AddTodo from "../../pages/add-todo";
+import { useEffect } from "react";
 
-type Props = {
-  params: {
-    chooseDate: string;
-  }
-}
+export default function Page({ params: { chooseDate = '' } }: { params: { chooseDate?: string } }) {
+    useEffect(() => {
+        if (typeof chooseDate !== 'string') {
+            console.error("Invalid chooseDate value", chooseDate);
+        }
+    }, [chooseDate]);
 
-export default function Page(props: Props) {
-    return <AddTodo chooseDate={props.params.chooseDate}/>;
+    return <AddTodo chooseDate={chooseDate}/>;
 }

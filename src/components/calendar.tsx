@@ -1,86 +1,35 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import useDate from '@/hooks/useDateInfo';
-import useMiniDate from '@/hooks/useMiniDateInfo';
 import { useRouter } from 'next/navigation';
+import { useBoundStore } from '@/hooks/boundStore';
+import TodoList from './todoList';
 
 const days = ['월', '화', '수', '목', '금', '토', '일'];
 
-const Calendar = () => {
+export default function Calendar() {
   const router = useRouter();
+  const {date, incrementMonth, decrementMonth} = useBoundStore();
 
-  const {date, setDate} = useDate();
-  const {setMiniDate} = useMiniDate();
-
-  let nextMonth: number = 0;
-  let firstDay = new Date(date.year, date.month - 1, 1).getDay();
-  let lastDay = new Date(date.year, date.month, 0).getDay();
-  const todayDay = new Date().getDate();
-
-  const lastDate = new Date(date.year, date.month, 0).getDate();
-
-  if(date.month == 12) nextMonth = 1;
-  else nextMonth = date.month + 1;
-
-  if(firstDay == 0) firstDay = 6;
-  else firstDay -= 1;
-
-  if(lastDay == 0) lastDay = 6;
-  else lastDay -= 1;
-
-  const firstDate = lastDate - firstDay + 1;
-
-  const daysArray = [...Array.from({length: lastDate-firstDate+1}, (_, i) => firstDate + i),
-                    ...[...Array(lastDate).keys()].map((i) => i + 1),
-                    ...Array.from({length: 6-lastDay}, (_, i) => i+1)];
-
-  const isMonthArray = [...Array.from({length: lastDate-firstDate+1}, (_, i) => false),
-                    ...[...Array(lastDate).keys()].map((i) => true),
-                    ...Array.from({length: 6-lastDay}, (_, i) => false)];
+  const {daysArray, isMonthArray} = thisMonth(date.year, date.month);
 
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     if (event.deltaY < 0) {
-      let year: number = date.year;
-      let month: number = date.month;
-
-      if(month == 1) {
-        year -= 1;
-        month = 12;
-      }
-      else {
-        month -= 1;
-      }
-
-      setDate({year:year, month:month});
-      setMiniDate({year:year, month:month});
+      decrementMonth();
     } 
     else if (event.deltaY > 0) {
-      let year: number = date.year;
-      let month: number = date.month;
-
-      if(month == 12) {
-        year += 1;
-        month = 1;
-      }
-      else {
-        month += 1;
-      }
-
-      setDate({year:year, month:month});
-      setMiniDate({year:year, month:month});
+      incrementMonth();
     }
   };
 
-  return (
-    <styles.displayWrapper>
+  return <styles.displayWrapper>
       <styles.leftPadding/>
       <styles.calendarWrapper onWheel={handleWheel}>
         <styles.dayWrapper>
           {
             days.map((day) => (
-            <styles.dayStyle>
+            <styles.dayStyle key={day}>
               {day}
             </styles.dayStyle>
             ))
@@ -89,43 +38,66 @@ const Calendar = () => {
         <styles.dateWrapper>
           {
             daysArray.map((day, index) => {
-                let pushDate = String(date.year);
+              const pushDate = String(date.year)+String(date.month).padStart(2,'0')+String(day).padStart(2,'0');
 
-                if(date.month < 9) {
-                  pushDate += '0'+String(date.month);
+              return <styles.dateStyle onDoubleClick={() => {isMonthArray[index] && router.push(`/${pushDate}/todo`)}} key={index} isMonth={isMonthArray[index]}>
+                {
+                  dateStyle(day, index, date, isMonthArray)
                 }
-                else {
-                  pushDate += String(date.month);
-                }
-
-                if(day < 9) {
-                  pushDate += '0'+String(day);
-                }
-                else {
-                  pushDate += String(day);
-                }
-
-                return <styles.dateStyle onDoubleClick={() => {if(isMonthArray[index])router.push(`/${pushDate}/todo`)}} key={'date'+index} isMonth={isMonthArray[index]} className={day === todayDay && isMonthArray[index] ? 'today' : ''}>
-                  {
-                    day === todayDay && date.month == new Date().getMonth()+1 && date.year == new Date().getFullYear()
-                    ? <styles.todayStyle>{day}</styles.todayStyle>
-                    :(day === 1 && isMonthArray[index]
-                      ? <>{date.month}월 1일</>
-                      :(day === 1 && !isMonthArray[index]
-                        ?<>{nextMonth}월 1일</>
-                        :<>{day}</>
-                      )
-                    )
-                  }
-                </styles.dateStyle>
-              }
-            )
+                <TodoList pushDate={pushDate} />
+              </styles.dateStyle>
+            })
           }
         </styles.dateWrapper>
       </styles.calendarWrapper>
-    </styles.displayWrapper>
-  );
+    </styles.displayWrapper>;
 };
+
+const dateStyle = (day:number,
+                  index: number,
+                  date: {year:number, month:number}, 
+                  isMonthArray: boolean[],
+                  ) => {
+  const today = new Date()
+
+  if(day == today.getDate() && date.month == today.getMonth()+1 && date.year == today.getFullYear()) {
+    return <styles.todayStyle>{day}</styles.todayStyle>
+  }
+
+  if(day === 1 && isMonthArray[index]) {
+    return <styles.dateWord>{date.month}월 1일</styles.dateWord>
+  }
+
+  if(day === 1 && !isMonthArray[index]) {
+    return <styles.dateWord>{nextMonth(date.month)}월 1일</ styles.dateWord>
+  }
+  
+  return <styles.dateWord>{day}</ styles.dateWord>
+}
+
+const nextMonth = (currentMonth: number) => {
+  return currentMonth === 12 ? 1 : currentMonth + 1;
+}
+
+const thisMonth = (year: number, month: number) => {
+  const sunFirstDay = new Date(year, month - 1, 1).getDay();
+  const sunLastDay = new Date(year, month, 0).getDay();
+  const firstDay = sunFirstDay-1 < 0 ? 6 : sunFirstDay-1;
+  const lastDay = sunLastDay-1 < 0 ? 6 : sunLastDay-1;
+
+  const lastDate = new Date(year, month, 0).getDate();
+
+  const firstDate = lastDate - firstDay + 1;
+
+  return {
+    daysArray: [...Array.from({length: lastDate-firstDate+1}, (_, i) => firstDate + i),
+                    ...[...Array(lastDate).keys()].map((i) => i + 1),
+                    ...Array.from({length: 6-lastDay}, (_, i) => i+1)],
+    isMonthArray: [...Array.from({length: lastDate-firstDate+1}, (_, i) => false),
+      ...[...Array(lastDate).keys()].map((i) => true),
+      ...Array.from({length: 6-lastDay}, (_, i) => false)]
+  };
+}
 
 const styles = {
   displayWrapper: styled.div`
@@ -151,6 +123,7 @@ const styles = {
   dateWrapper: styled.div`
     display: grid;
     grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
     width: 100%;
     flex-grow: 1;
   `,
@@ -164,20 +137,21 @@ const styles = {
     flex-grow: 1;
   `,
   dateStyle: styled.div<{ isMonth: boolean }>`
+    display:flex;
     text-align: center;
-    background-color: #fff;
+    align-items: center;
     color: ${(props) => (props.isMonth ? '#3d4144' : '#70757a')};
     border-right: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
-    padding-top: 8px;
+    padding-top: 3px;
+    flex-direction: column;
     font-size: 12px;
-
-    &.today {
-      padding-top: 3px;
-    }
+  `,
+  dateWord: styled.div`
+    height: 24px;
+    line-height: 24px;
   `,
   todayStyle: styled.div`
-    display: inline-block;
     color: #fff;
     height: 24px;
     line-height: 24px;
@@ -186,5 +160,3 @@ const styles = {
     background-color: #1b74e9;
   `,
 };
-
-export default Calendar;

@@ -2,39 +2,17 @@
 
 import React from 'react';
 import styled from '@emotion/styled';
-import useMiniDate from '@/hooks/useMiniDateInfo';
+import { useBoundStore } from '@/hooks/boundStore';
 
 const MiniHeader = () => {
-  const {miniDate, setMiniDate} = useMiniDate();
+  const {miniDate, incrementMiniMonth, decrementMiniMonth} = useBoundStore();
 
   const lastMonthClick = () => {
-    let year: number = miniDate.year;
-    let month: number = miniDate.month;
-
-    if(month == 1) {
-      year -= 1;
-      month = 12;
-    }
-    else {
-      month -= 1;
-    }
-
-    setMiniDate({year:year, month:month});
+    decrementMiniMonth();
   };
 
   const nextMonthClick = () => {
-    let year: number = miniDate.year;
-    let month: number = miniDate.month;
-
-    if(month == 12) {
-      year += 1;
-      month = 1;
-    }
-    else {
-      month += 1;
-    }
-
-    setMiniDate({year:year, month:month});
+    incrementMiniMonth();
   }
 
   return (

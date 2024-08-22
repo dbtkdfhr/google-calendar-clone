@@ -1,16 +1,11 @@
-import { create } from 'zustand'
+import { StateCreator } from 'zustand'
 
-interface MenuData {
-  isOpen: boolean
+export interface MenuDataSlice {
+  isOpen: boolean;
+  setOpen: (isOpen: boolean) => void;
 }
 
-interface MenuDataActions {
-  setOpen: (isOpen: boolean) => void
-}
-
-const useMenuData  = create<MenuData & MenuDataActions>((set) => ({
+export const createMenuDataSlice: StateCreator<MenuDataSlice> = ((set) => ({
   isOpen: true,
   setOpen: (isOpen: boolean) => {set({ isOpen })},
 }))
-
-export default useMenuData

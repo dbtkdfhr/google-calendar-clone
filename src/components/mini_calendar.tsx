@@ -3,46 +3,17 @@
 import React from 'react';
 import styled from '@emotion/styled';
 import MiniHeader from './mini_header';
-import useMiniDate from '@/hooks/useMiniDateInfo';
-import useDate from '@/hooks/useDateInfo';
-import useMenuData from '@/hooks/menuData';
+import { useBoundStore } from '@/hooks/boundStore';
 
 interface MenuProps {
   $isOpen?: boolean;
 }
 
 const MiniCalendar = () => {
-  const {setDate} = useDate();
-  const {miniDate} = useMiniDate();
-  const {isOpen} = useMenuData();
+  const {miniDate, setDate} = useBoundStore();
+  const isOpen = useBoundStore((state)=>state.isOpen);
 
-  let nextMonth: number = 0;
-  let firstDay = new Date(miniDate.year, miniDate.month - 1, 1).getDay();
-  let lastDay = new Date(miniDate.year, miniDate.month, 0).getDay();
-  const todayDay = new Date().getDate();
-
-  const lastDate = new Date(miniDate.year, miniDate.month, 0).getDate();
-
-  if(miniDate.month == 12) nextMonth = 1;
-  else nextMonth = miniDate.month + 1;
-
-  if(firstDay == 0) firstDay = 6;
-  else firstDay -= 1;
-
-  if(lastDay == 0) lastDay = 6;
-  else lastDay -= 1;
-
-  const firstDate = lastDate - firstDay + 1;
-
-  const daysArray = [...Array.from({length: lastDate-firstDate+1}, (_, i) => firstDate + i),
-                    ...[...Array(lastDate).keys()].map((i) => i + 1)];
-
-  daysArray.push(...Array.from({length: 42 - daysArray.length}, (_, i) => 1 + i));
-
-  const isMonthArray = [...Array.from({length: lastDate-firstDate+1}, (_, i) => false),
-                    ...[...Array(lastDate).keys()].map((i) => true)];
-
-  isMonthArray.push(...Array.from({length: 42 - isMonthArray.length}, (_, i) => false));
+  const {daysArray, isMonthArray} = thisMonth(miniDate.year, miniDate.month);
 
   const days = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -56,7 +27,7 @@ const MiniCalendar = () => {
       <styles.dayWrapper>
         {
           days.map((day) => (
-          <styles.dayStyle>
+          <styles.dayStyle key={day}>
             {day}
           </styles.dayStyle>
           ))
@@ -65,9 +36,9 @@ const MiniCalendar = () => {
       <styles.dateWrapper>
         {
           daysArray.map((day, index) => (
-            day === todayDay && miniDate.month == new Date().getMonth()+1 && miniDate.year == new Date().getFullYear()
-            ? <styles.todayStyle onClick={dateClick}>{day}</styles.todayStyle>
-            :<styles.dateStyle onClick={dateClick} key={index} isMonth={isMonthArray[index]} className={day === todayDay && isMonthArray[index] ? 'today' : ''}>
+            day === new Date().getDate() && miniDate.month == new Date().getMonth()+1 && miniDate.year == new Date().getFullYear()
+            ? <styles.todayStyle key={index} onClick={dateClick}>{day}</styles.todayStyle>
+            :<styles.dateStyle onClick={dateClick} key={index} isMonth={isMonthArray[index]}>
               {day}
             </styles.dateStyle>
           ))
@@ -76,7 +47,34 @@ const MiniCalendar = () => {
     </styles.calendarWrapper>
   );
 };
-// transform: ${(props) => props.$isOpen? 'translateX(0)':'translateX(-100%)'};
+
+const thisMonth = (year: number, month: number) => {
+  const sunFirstDay = new Date(year, month - 1, 1).getDay();
+  const sunLastDay = new Date(year, month, 0).getDay();
+  const firstDay = sunFirstDay-1 < 0 ? 6 : sunFirstDay-1;
+  const lastDay = sunLastDay-1 < 0 ? 6 : sunLastDay-1;
+
+  const lastDate = new Date(year, month, 0).getDate();
+
+  const firstDate = lastDate - firstDay + 1;
+
+  const daysArray = [...Array.from({length: lastDate-firstDate+1}, (_, i) => firstDate + i),
+    ...[...Array(lastDate).keys()].map((i) => i + 1),
+    ...Array.from({length: 6-lastDay}, (_, i) => i+1)];
+
+  const isMonthArray = [...Array.from({length: lastDate-firstDate+1}, (_, i) => false),
+    ...[...Array(lastDate).keys()].map((i) => true),
+    ...Array.from({length: 6-lastDay}, (_, i) => false)];
+
+  daysArray.push(...Array.from({length: 42 - daysArray.length}, (_, i) => 1 + i));
+  isMonthArray.push(...Array.from({length: 42 - isMonthArray.length}, (_, i) => false));
+
+  return {
+    daysArray: daysArray,
+    isMonthArray: isMonthArray
+  };
+}
+
 const styles = {
   calendarWrapper: styled.div<MenuProps>`
     display: flex;

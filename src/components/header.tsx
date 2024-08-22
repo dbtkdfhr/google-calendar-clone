@@ -2,50 +2,21 @@
 
 import React from 'react';
 import styled from '@emotion/styled';
-import useDate from '../hooks/useDateInfo';
-import useMiniDate from '@/hooks/useMiniDateInfo';
-import useMenuData from '@/hooks/menuData';
+import { useBoundStore } from '@/hooks/boundStore';
 
 const Header = () => {
-  const {date, setDate, todaySet} = useDate();
-  const {setMiniDate, setMiniToday} = useMiniDate();
-  const {isOpen, setOpen} = useMenuData();
+  const {date, isOpen, todaySet, incrementMonth, decrementMonth, setOpen} = useBoundStore();
 
   const lastMonthClick = () => {
-    let year: number = date.year;
-    let month: number = date.month;
-
-    if(month == 1) {
-      year -= 1;
-      month = 12;
-    }
-    else {
-      month -= 1;
-    }
-
-    setDate({year:year, month:month});
-    setMiniDate({year:year, month:month});
+    decrementMonth();
   };
 
   const nextMonthClick = () => {
-    let year: number = date.year;
-    let month: number = date.month;
-
-    if(month == 12) {
-      year += 1;
-      month = 1;
-    }
-    else {
-      month += 1;
-    }
-
-    setDate({year:year, month:month});
-    setMiniDate({year:year, month:month});
+    incrementMonth();
   }
 
   const todayClick = () => {
     todaySet();
-    setMiniToday();
   }
 
   const menuClick = () => {
